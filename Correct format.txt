@@ -1,0 +1,19 @@
+{
+  "Name": "Nitish Jain",
+  "Gender": "Male",
+  "Education": "B.Sc in Computer Science",
+  "Experience": "Worked at Tech Solutions as a Backend Developer.",
+  "Experience_Years": 4,
+  "City": "Delhi",
+  "Role_Want": "Backend Developer",
+  "Job_Applied_ID": 301,
+  "Email": "amit.verma@example.com",
+  "Mobile_Number": "9998887770",
+  "Date_of_Birth": "1995-06-10",
+  "Current_Location": "Delhi",
+  "Hometown": "Jaipur",
+  "Education_level": "Graduate",
+  "password": "Amit@1234"
+}
+
+Email must be unique

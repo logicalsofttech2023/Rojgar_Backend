@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: rojgar
+      MYSQL_USER: sanskar
+      MYSQL_PASSWORD: 
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+
+  backend:
+    build: ./backend
+    container_name: backend_container
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: sanskar
+      DB_PASSWORD: 
+      DB_NAME: rojgar
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
