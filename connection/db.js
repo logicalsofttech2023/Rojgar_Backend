@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const sequelize = new Sequelize(
-  "logicals_new_rojgaarr",
-  "logicals_logicals_rojgaarr",
-  "CtfMu$)5sm-p",
+  "rojgar",
+  "root",
+  "",
   {
-    host: "157.66.191.9",
+    host: "localhost",
     port: 3306,
     dialect: "mysql",
     dialectOptions: {

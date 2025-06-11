@@ -18,11 +18,11 @@ const JobPostPlan = sequelize.define(
       allowNull: false,
     },
     plan_job_count: {
-      type: DataTypes.STRING("unlimited", "limited"),
+      type: DataTypes.ENUM("unlimited", "limited"),
       allowNull: false,
     },
     duration: {
-      type: DataTypes.STRING("1Month", "6Months", "1Year"),
+      type: DataTypes.ENUM("1Month", "6Months", "1Year"),
       allowNull: true,
     },
     price: {

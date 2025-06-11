@@ -16,5 +16,8 @@ router.get("/getLatestJobs", jobControl.getLatestJobs);
 router.post("/updateJob", jobControl.updateJob);
 router.post("/deleteJob", jobControl.deleteJob);
 router.get("/getJobById", jobControl.getJobById);
+router.get("/getAppliedJobDetailsById", jobControl.getAppliedJobDetailsById);
+
+
 
 export default router;

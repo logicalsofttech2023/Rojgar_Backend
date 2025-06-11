@@ -878,6 +878,7 @@ export const getPlanById = async (req, res) => {
 };
 
 
+
 export const updateApplicationStatus = async (req, res) => {
   try {
     const { job_applied_id, status } = req.body;

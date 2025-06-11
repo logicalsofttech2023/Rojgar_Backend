@@ -96,7 +96,9 @@ export const createJob = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: "Internal Server Error", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 };
 
@@ -110,6 +112,7 @@ export const getJobs = async (req, res) => {
       jobType,
       workLocationType,
       job_title,
+      user_id, // 👈 Accept user_id from query
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -120,7 +123,7 @@ export const getJobs = async (req, res) => {
     };
 
     if (search) {
-      whereClause.job_title = { [Op.like]: `%${search}%` }; // case-insensitive LIKE (PostgreSQL); for MySQL use Op.substring
+      whereClause.job_title = { [Op.like]: `%${search}%` };
     }
 
     if (jobType) {
@@ -153,15 +156,35 @@ export const getJobs = async (req, res) => {
       order: [["created_at", "DESC"]],
     });
 
+    let jobsWithStatus = rows;
+
+    let appliedJobIds = [];
+
+    // 🔍 Check application status for each job if user_id is provided
+    if (user_id) {
+      const appliedJobs = await AppliedJob.findAll({
+        where: { user_id },
+        attributes: ["job_id"],
+      });
+
+      appliedJobIds = appliedJobs.map((job) => job.job_id);
+
+      jobsWithStatus = rows.map((job) => ({
+        ...job.toJSON(),
+        isApplied: user_id ? appliedJobIds.includes(job.job_id) : false,
+      }));
+    }
+
     return res.status(200).json({
       stat: true,
-      d: rows,
+      d: jobsWithStatus,
       totalPages: Math.ceil(count / limit),
       totalCount: count,
       currentPage: parseInt(page),
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Error in getJobs:", error);
+    return res.status(500).json({
       error: "Internal Server Error",
       details: error.message,
     });
@@ -305,7 +328,8 @@ export const applyForJob = async (req, res) => {
     if (!job_id) {
       return res.status(400).json({
         stat: false,
-        message: "Job ID is missing. Maybe the job has been deleted by the user.",
+        message:
+          "Job ID is missing. Maybe the job has been deleted by the user.",
       });
     }
 
@@ -518,27 +542,45 @@ export const AppliedJobsGivenDays = async (req, res) => {
 };
 export const getJobsByData = async (req, res) => {
   try {
-    const { job_id } = req.body;
+    const { job_id, user_id } = req.body;
 
-    try {
-      const jobs = await Job.findOne({ where: { job_id: job_id } });
-
-      if (jobs.length === 0) {
-        return res.status(404).json({ stat: false, message: "No jobs found" });
-      }
-      return res.status(200).json({ status: true, message: jobs });
-    } catch (error) {
+    // 🔍 Validate job_id
+    if (!job_id) {
       return res
         .status(400)
-        .json({ status: false, message: `Error Occured ${error}` });
+        .json({ status: false, message: "Job ID is required" });
     }
 
-    // If no jobs found, return a 404 response
+    // 🔍 Find job
+    const job = await Job.findOne({ where: { job_id } });
 
-    // Return the jobs in response
+    if (!job) {
+      return res.status(404).json({ status: false, message: "Job not found" });
+    }
+
+    let isApplied = false;
+
+    // 🔍 If user_id is provided, check if already applied
+    if (user_id) {
+      const applied = await AppliedJob.findOne({ where: { user_id, job_id } });
+      isApplied = !!applied;
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Job fetched successfully",
+      data: {
+        job,
+        isApplied,
+      },
+    });
   } catch (error) {
-    console.error("Error fetching jobs:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error fetching job:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -574,7 +616,8 @@ export const countJobApplications = async (req, res) => {
 };
 export const getLatestJobs = async (req, res) => {
   try {
-    // Fetch latest 10 jobs with associated company logo
+    const { user_id } = req.query;
+
     const jobs = await Job.findAll({
       where: { Approval_Status: "Approved" },
       order: [["created_at", "DESC"]],
@@ -584,18 +627,11 @@ export const getLatestJobs = async (req, res) => {
         "company_name",
         "job_title",
         "job_type",
-        // "night_shift",
         "work_location_type",
         "location",
         "pay_type",
         "salary",
-        // "perks",
-        // "minimum_education",
-        // "english_level",
-        // "total_experience",
         "job_description",
-        // "walk_in_interview",
-        // "contact_preference",
         "created_at",
       ],
       include: [
@@ -611,7 +647,17 @@ export const getLatestJobs = async (req, res) => {
       return res.status(404).json({ success: false, message: "No jobs found" });
     }
 
-    // Formatting response with a result object
+    let appliedJobIds = [];
+
+    // 🔍 If user_id is provided, get job_ids from AppliedJob
+    if (user_id) {
+      const appliedJobs = await AppliedJob.findAll({
+        where: { user_id },
+        attributes: ["job_id"],
+      });
+      appliedJobIds = appliedJobs.map((item) => item.job_id);
+    }
+
     const result = jobs.map((job) => {
       const jobData = job.toJSON();
 
@@ -620,20 +666,14 @@ export const getLatestJobs = async (req, res) => {
         company_name: jobData.company_name,
         job_title: jobData.job_title,
         job_type: jobData.job_type,
-        // night_shift: jobData.night_shift,
         work_location_type: jobData.work_location_type,
         location: jobData.location,
         pay_type: jobData.pay_type,
         salary: jobData.salary,
-        // perks: jobData.perks,
-        // minimum_education: jobData.minimum_education,
-        // english_level: jobData.english_level,
-        // total_experience: jobData.total_experience,
         job_description: jobData.job_description,
-        // walk_in_interview: jobData.walk_in_interview,
-        // contact_preference: jobData.contact_preference,
         created_at: jobData.created_at,
-        company_logo: jobData.company?.Company_Logo || null, // Returning as key-value pair
+        company_logo: jobData.company?.Company_Logo || null,
+        isApplied: appliedJobIds.includes(jobData.job_id), // ✅ Include apply status
       };
     });
 
@@ -643,15 +683,16 @@ export const getLatestJobs = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching latest jobs:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
 export const getUsersAppliedForJob = async (req, res) => {
   try {
-    const { job_id } = req.body; // Assuming job_id comes from request body
+    const { job_id } = req.body;
 
     if (!job_id) {
       return res.status(400).json({
@@ -663,6 +704,17 @@ export const getUsersAppliedForJob = async (req, res) => {
     // Fetch users who applied for the given job_id
     const appliedUsers = await AppliedJob.findAll({
       where: { job_id },
+      attributes: [
+        "job_applied_id",
+        "job_id",
+        "Company_Id",
+        "work_location_type",
+        "job_title",
+        "company_name",
+        "user_id",
+        "JobPreferenceById",
+        "application_status",
+      ],
       include: [
         {
           model: User,
@@ -674,7 +726,7 @@ export const getUsersAppliedForJob = async (req, res) => {
             "Mobile_Number",
             "Education_level",
             "Experience_Years",
-          ], // Fetch only required fields
+          ],
         },
       ],
     });
@@ -690,7 +742,7 @@ export const getUsersAppliedForJob = async (req, res) => {
     return res.status(200).json({
       stat: true,
       message: `Users who applied for job`,
-      data: appliedUsers.map((appliedJob) => appliedJob.User), // Extract user details
+      data: appliedUsers
     });
   } catch (error) {
     console.error("Error fetching users who applied for the job:", error);
@@ -700,6 +752,84 @@ export const getUsersAppliedForJob = async (req, res) => {
     });
   }
 };
+
+export const getAppliedJobDetailsById = async (req, res) => {
+  try {
+    const { job_applied_id } = req.query;
+
+    if (!job_applied_id) {
+      return res.status(400).json({
+        status: false,
+        message: "Job Applied ID is required!",
+      });
+    }
+
+    const application = await AppliedJob.findOne({
+      where: { job_applied_id },
+      attributes: [
+        "job_applied_id",
+        "job_id",
+        "Company_Id",
+        "work_location_type",
+        "job_title",
+        "company_name",
+        "user_id",
+        "JobPreferenceById",
+        "application_status",
+        "created_at",
+        "updatedAt"
+      ],
+      include: [
+        {
+          model: User,
+          as: "User",
+          attributes: [
+            "user_id",
+            "Name",
+            "Gender",
+            "Education_Details",
+            "Education_level",
+            "Experience_Years",
+            "Experience_Details",
+            "City",
+            "Job_Role_Want",
+            "Email",
+            "Country_Code",
+            "Mobile_Number",
+            "Date_of_Birth",
+            "Current_Location",
+            "Skills",
+            "user_image",
+            "Certificates",
+            "Education_level",
+            "Experience_Years",
+          ],
+        },
+      ],
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        status: false,
+        message: "Application not found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Applied job details fetched successfully",
+      data: application,
+    });
+
+  } catch (error) {
+    console.error("Error fetching applied job detail:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error!",
+    });
+  }
+};
+
 
 export const updateJob = async (req, res) => {
   try {
@@ -797,4 +927,3 @@ export const getJobById = async (req, res) => {
     });
   }
 };
-
