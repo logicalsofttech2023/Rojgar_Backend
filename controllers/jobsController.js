@@ -292,67 +292,76 @@ export const getJobCounts = async (req, res) => {
 };
 export const applyForJob = async (req, res) => {
   try {
-    const { job_id, user_id } = req.body;
+    const { job_id, user_id, JobPreferenceById } = req.body;
 
-    // If job_id or user_id is missing, return without an error message
+    // 🔸 Validate input
     if (!user_id) {
-      return res
-        .status(200)
-        .json({ stat: false, message: "User ID is missing. " });
-    }
-    if (!job_id) {
-      return res.status(200).json({
+      return res.status(400).json({
         stat: false,
-        message: "Job ID is missing. May be Job has been deleted by user",
+        message: "User ID is missing.",
       });
     }
 
+    if (!job_id) {
+      return res.status(400).json({
+        stat: false,
+        message: "Job ID is missing. Maybe the job has been deleted by the user.",
+      });
+    }
+
+    // 🔍 Check if user exists
     const user = await User.findOne({ where: { user_id } });
     if (!user) {
-      return res
-        .status(200)
-        .json({ stat: false, message: "User not found. No action taken." });
+      return res.status(404).json({
+        stat: false,
+        message: "User not found.",
+      });
     }
+
+    // 🔍 Check if user already applied
     const AppliedBefore = await AppliedJob.findOne({
       where: { user_id, job_id },
     });
+
     if (AppliedBefore) {
-      return res.status(200).json({
+      return res.status(409).json({
         stat: false,
         flag: "applied",
-        message: "User has already applied.",
+        message: "User has already applied for this job.",
       });
     }
-    const job = await Job.findOne({ where: { job_id: job_id } });
 
+    // 🔍 Check if job exists
+    const job = await Job.findOne({ where: { job_id } });
     if (!job) {
-      return res.status(200).json({
+      return res.status(404).json({
         stat: false,
-        message: "Job not found. May be user has deleted this job",
+        message: "Job not found. Maybe it was deleted.",
       });
     }
 
-    try {
-      const appliedJob = await AppliedJob.create({
-        job_id: job.job_id,
-        Company_Id: job.Company_Id,
-        job_title: job.job_title,
-        company_name: job.company_name,
-        user_id: user.user_id, // User applying for the job
-      });
-      return res.status(201).json({
-        stat: true,
-        message: "Job application successful",
-        d: appliedJob,
-      });
-    } catch (error) {
-      return res.status(400).json({ stat: false, message: error.message });
-    }
+    // ✅ Create new applied job entry
+    const appliedJob = await AppliedJob.create({
+      job_id: job.job_id,
+      Company_Id: job.Company_Id,
+      JobPreferenceById: JobPreferenceById || null,
+      job_title: job.job_title,
+      company_name: job.company_name,
+      user_id: user.user_id,
+    });
+
+    return res.status(201).json({
+      stat: true,
+      message: "Job application successful",
+      data: appliedJob,
+    });
   } catch (error) {
     console.error("Error applying for job:", error);
-    return res
-      .status(500)
-      .json({ stat: false, message: "Internal Server Error" });
+    return res.status(500).json({
+      stat: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 export const getAppliedJobsByUser = async (req, res) => {
@@ -393,6 +402,7 @@ export const getAppliedJobsByUser = async (req, res) => {
       .json({ error: "Internal Server Error", details: error.message });
   }
 };
+
 export const getJobsByCompanyId = async (req, res) => {
   try {
     const { companyId } = req.body;

@@ -7,9 +7,10 @@ import moment from "moment";
 import crypto from "crypto";
 import nodeMailer from "nodemailer";
 import { Op } from "sequelize";
-
-import { where } from "sequelize";
+import UserJobPreferences from "../models/userJobPreferences.js";
+import Department from "../models/Department.js";
 dotenv.config();
+
 export const createUser = async (req, res, next) => {
   try {
     const { password, ...otherDetails } = req.body; // Extract password separately
@@ -963,7 +964,6 @@ export const updateUserCertificates = async (req, res) => {
       .json({ status: false, message: "Internal Server Error" });
   }
 };
-// Update Certification
 export const updateCertification = async (req, res) => {
   try {
     const { userId, updatedCertifications } = req.body;
@@ -1008,7 +1008,6 @@ export const updateCertification = async (req, res) => {
   }
 };
 
-// Modify Certification
 export const modifyCertification = async (req, res) => {
   try {
     const { userId, newCertificationData } = req.body;
@@ -1086,5 +1085,161 @@ export const uploadImage = async (req, res) => {
       .json({ message: "Image uploaded and saved", filePath: imageFile.path });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const createJobPreference = async (req, res) => {
+  try {
+    const {
+      user_id,
+      Preferred_Job_Location,
+      Preferred_Job_Type,
+      Expected_Salary,
+      Willing_To_Relocate,
+      Notice_Period,
+    } = req.body;
+
+    let resume = req.files["resume"] ? req.files["resume"][0].path : null;
+
+    const newPreference = await UserJobPreferences.create({
+      user_id,
+      Preferred_Job_Location,
+      Preferred_Job_Type,
+      Expected_Salary,
+      Willing_To_Relocate,
+      Notice_Period,
+      resume,
+    });
+
+    res
+      .status(201)
+      .json({
+        status: true,
+        message: "Preference created successfully",
+        data: newPreference,
+      });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        status: false,
+        message: "Error creating preference",
+        error: error.message,
+      });
+  }
+};
+
+export const updateJobPreference = async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    // Check if resume file is present
+    let resume = req.files?.["resume"] ? req.files["resume"][0].path : null;
+
+    // Merge resume with body if provided
+    const updatedData = {
+      ...req.body,
+      ...(resume && { resume }),
+    };
+
+    const updated = await UserJobPreferences.update(updatedData, {
+      where: { id },
+    });
+
+    if (updated[0] === 0) {
+      return res
+        .status(404)
+        .json({ message: "Preference not found or nothing updated." });
+    }
+
+    const result = await UserJobPreferences.findByPk(id);
+    return res.status(200).json({
+      status: true,
+      message: "Preference updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        status: false,
+        message: "Error updating preference",
+        error: error.message,
+      });
+  }
+};
+
+export const getAllJobPreferencesByUserId = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+
+    if (!userId) {
+      return res.status(400).json({
+        message: "Missing required parameter: userId",
+      });
+    }
+    const preferences = await UserJobPreferences.findAll({
+      where: { user_id: userId },
+    });
+
+    if (!preferences || preferences.length === 0) {
+      return res.status(404).json({
+        message: "No job preferences found for this user",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Job preferences fetched successfully",
+      data: preferences,
+    });
+  } catch (error) {
+    console.error("Error fetching preferences:", error);
+    return res.status(500).json({
+      message: "Error fetching preferences",
+      error: error.message,
+    });
+  }
+};
+
+export const getJobPreferenceById = async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ message: "Preference ID is required." });
+    }
+    const preference = await UserJobPreferences.findByPk(id);
+
+    if (!preference) {
+      return res.status(404).json({ message: "Preference not found." });
+    }
+
+    res.status(200).json(preference);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching preference", error: error.message });
+  }
+};
+
+export const deleteJobPreference = async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ message: "Preference ID is required." });
+    }
+
+    const deleted = await UserJobPreferences.destroy({ where: { id } });
+
+    if (deleted === 0) {
+      return res.status(404).json({ message: "Preference not found." });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Preference deleted successfully.", status: true });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error deleting preference", error: error.message });
   }
 };

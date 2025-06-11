@@ -52,4 +52,5 @@ const Report = sequelize.define("reported", {
   tableName:"reported"
 });
 
+
 export default Report;

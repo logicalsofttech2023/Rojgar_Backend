@@ -3,19 +3,20 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.USER,
-  process.env.PASS,
+  "logicals_new_rojgaarr",
+  "logicals_logicals_rojgaarr",
+  "CtfMu$)5sm-p",
   {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    host: "157.66.191.9",
+    port: 3306,
     dialect: "mysql",
     dialectOptions: {
-      connectTimeout: 10000, // increase timeout for slow connections
+      connectTimeout: 10000,
     },
-    logging: false, // disable query logging
+    logging: false,
   }
 );
+
 
 export const connectDB = async () => {
   try {
@@ -31,22 +32,17 @@ export default sequelize;
 
 
 // const sequelize = new Sequelize(
-//   "logicals_new_rojgaarr", // database name
-//   "logicals_logicals_rojgaarr", // username
-//   "CtfMu$)5sm-p", // password
+//   "logicals_new_rojgaarr",
+//   "logicals_logicals_rojgaarr",
+//   "CtfMu$)5sm-p",
 //   {
-//     host: "localhost", // database host
-//     port: 3306, // database port (as number)
+//     host: "157.66.191.9",
+//     port: 3306,
 //     dialect: "mysql",
 //     dialectOptions: {
-//       connectTimeout: 10000, // increase timeout for slow connections
+//       connectTimeout: 10000,
 //     },
-//     logging: process.env.NODE_ENV === "development" ? console.log : false,
-//     pool: {
-//       max: 5,
-//       min: 0,
-//       acquire: 30000,
-//       idle: 10000,
-//     },
+//     logging: false,
 //   }
 // );
+

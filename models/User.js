@@ -38,4 +38,7 @@ User.beforeCreate(async (user) => {
   user.password = await bcrypt.hash(user.password, salt);
 });
 
+await User.sync();
+
+
 export default User;

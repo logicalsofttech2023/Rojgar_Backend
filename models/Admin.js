@@ -2,12 +2,7 @@ import { DataTypes } from "sequelize";
 import sequelize from "../connection/db.js"; // Import your Sequelize instance
 import bcrypt from "bcryptjs";
 const Admin = sequelize.define(
-  
-  
-  
-  
-  
-    "admin",
+  "admin",
   {
     Admin_Id: {
       type: DataTypes.INTEGER,
@@ -19,7 +14,7 @@ const Admin = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-  
+
     Admin_Password: {
       type: DataTypes.STRING(255),
       allowNull: false,
@@ -55,57 +50,6 @@ Admin.beforeUpdate(async (admin) => {
     admin.Admin_Password = await bcrypt.hash(admin.Admin_Password, salt);
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

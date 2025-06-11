@@ -164,4 +164,6 @@ Company.belongsTo(JobPostPlan, {
   as: "planDetails",
 });
 
+
+
 export default Company;

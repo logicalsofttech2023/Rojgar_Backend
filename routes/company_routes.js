@@ -45,6 +45,7 @@ Router.post("/forgot_password", company_control.forgotPassword);
 Router.get("/getAllPlans", company_control.getAllPlans);
 Router.post("/purchaseJobPostPlan", company_control.purchaseJobPostPlan);
 Router.get("/getPlanById", company_control.getPlanById);
+Router.post("/updateApplicationStatus", company_control.updateApplicationStatus);
 
 
 

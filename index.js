@@ -17,8 +17,10 @@ import reportRoute from "./routes/report_route.js";
 import suggetionRoute from "./routes/suggetion_route.js";
 
 import adminRoutes from "./routes/admin_route.js";
+import { createAllTables } from "./connection/CreateAllTable.js";
 dotenv.config();
 connectDB();
+createAllTables();
 
 const app = express();
 

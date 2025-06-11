@@ -30,4 +30,6 @@ const Suggestion = sequelize.define(
   }
 );
 
+
+
 export default Suggestion;

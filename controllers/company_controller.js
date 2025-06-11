@@ -271,124 +271,250 @@ export const getCompanyById = async (req, res) => {
   }
 };
 
-export const updateCompany = async (req, res) => {
+export const updateCompany = async (req, res, next) => {
   try {
-    const { Company_Id, ...updateData } = req.body;
+    const {
+      Company_ID,
+      Company_User_Name,
+      Company_Name,
+      Company_Type,
+      Country_Code,
+      Mobile_Number,
+      Company_Email,
+      password,
+      Company_Website,
+      Company_Description,
+      Company_Start_Date,
+      Company_Address,
+      Latitude,
+      Longitude,
+      FCM_ID,
+      Device_ID,
+    } = req.body;
 
-    // Ensure Company_Id is provided
-    if (!Company_Id) {
-      return res.status(400).json({
-        success: false,
-        message: "Company_Id is required for update.",
-      });
-    }
+    let Company_Logo = req.files?.["Company_Logo"]
+      ? req.files["Company_Logo"][0].path
+      : null;
 
-    // Find the company by ID
-    const company = await Company.findByPk(Company_Id);
+    let Company_Gov_Docs = req.files?.["Company_Gov_Docs"]
+      ? req.files["Company_Gov_Docs"][0].path
+      : null;
+
+      
+
+    const company = await Company.findByPk(Company_ID);
+    
+
     if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "Company not found.",
-      });
+      return res.status(404).json({ stat: false, message: "Company not found!" });
     }
 
-    // Check for duplicate mobile number
-    if (updateData.Mobile_Number) {
-      const existingMobile = await Company.findOne({
-        where: {
-          Mobile_Number: updateData.Mobile_Number,
-          Company_Id: { [Op.ne]: Company_Id },
-        },
-      });
-      if (existingMobile) {
-        return res.status(400).json({
-          success: false,
-          message: "Mobile number is already in use.",
-        });
-      }
-    }
-
-    // Check for duplicate email
-    if (updateData.Company_Email) {
-      const existingEmail = await Company.findOne({
-        where: {
-          Company_Email: updateData.Company_Email,
-          Company_Id: { [Op.ne]: Company_Id },
-        },
-      });
-      if (existingEmail) {
-        return res.status(400).json({
-          success: false,
-          message: "Company email is already in use.",
-        });
-      }
-    }
-
-    // Check for duplicate username
-    if (updateData.Company_User_Name) {
-      const existingUserName = await Company.findOne({
-        where: {
-          Company_User_Name: updateData.Company_User_Name,
-          Company_Id: { [Op.ne]: Company_Id },
-        },
-      });
-      if (existingUserName) {
-        return res.status(400).json({
-          success: false,
-          message: "Company username is already taken.",
-        });
-      }
-    }
-
-    // Handle Company_Logo file update if uploaded
-    const Company_Logo = req.files?.Company_Logo
-      ? req.files.Company_Logo[0].path
-      : null;
-
-    const Company_Gov_Docs = req.files?.Company_Gov_Docs
-      ? req.files.Company_Gov_Docs[0].path
-      : null;
-
-    if (Company_Logo) {
-      updateData.Company_Logo = Company_Logo;
-    }
-
-    if (Company_Gov_Docs) {
-      updateData.Company_Gov_Docs = Company_Gov_Docs;
-    }
-
-    // Perform the update
-    await Company.update(updateData, {
-      where: { Company_Id },
-    });
-
-    // Fetch updated company (excluding sensitive fields)
-    const companyUpdated = await Company.findByPk(Company_Id, {
-      attributes: {
-        exclude: [
-          "password",
-          "FCM_ID",
-          "DEVICE_ID",
-          "reset_token",
-          "reset_token_expires",
+    // Check for duplicates in other records
+    const duplicateCheck = await Company.findOne({
+      where: {
+        [Op.and]: [
+          { Company_ID: { [Op.ne]: Company_ID } },
+          {
+            [Op.or]: [
+              { Company_User_Name },
+              { Company_Name },
+              { Mobile_Number },
+              { Company_Email },
+            ],
+          },
         ],
       },
     });
 
+    if (duplicateCheck) {
+      if (duplicateCheck.Company_User_Name === Company_User_Name) {
+        return res.status(400).json({ stat: false, message: "Company username already exists!" });
+      }
+      if (duplicateCheck.Company_Name === Company_Name) {
+        return res.status(400).json({ stat: false, message: "Company name already exists!" });
+      }
+      if (duplicateCheck.Mobile_Number === Mobile_Number) {
+        return res.status(400).json({ stat: false, message: "Mobile number already exists!" });
+      }
+      if (duplicateCheck.Company_Email === Company_Email) {
+        return res.status(400).json({ stat: false, message: "Company email already exists!" });
+      }
+    }
+
+    // Update company
+    await company.update({
+      Company_User_Name,
+      Company_Name,
+      Company_Type,
+      Country_Code,
+      Mobile_Number,
+      Company_Email,
+      password,
+      Company_Website,
+      Company_Description,
+      Company_Start_Date,
+      Company_Address,
+      Latitude,
+      Longitude,
+      FCM_ID,
+      Device_ID,
+      ...(Company_Logo && { Company_Logo }),
+      ...(Company_Gov_Docs && { Company_Gov_Docs }),
+    });
+
     return res.status(200).json({
-      success: true,
-      message: "Company updated successfully.",
-      data: companyUpdated,
+      stat: true,
+      message: "Company updated successfully",
+      company,
     });
   } catch (error) {
     console.error("Error updating company:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
+
+    if (error.name === "SequelizeValidationError") {
+      return res.status(400).json({
+        errorType: "Validation Error",
+        message: "Invalid input data",
+        details: error.errors.map((e) => e.message),
+      });
+    }
+
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({
+        errorType: "Database Error",
+        message: "Duplicate entry detected.",
+        details: error.errors.map((e) => e.message),
+      });
+    }
+
+    res.status(500).json({
+      errorType: "Server Error",
+      message: "Internal Server Error! Please try again later.",
+      details: error.message,
     });
+
+    next(error);
   }
 };
+
+
+// export const updateCompany = async (req, res) => {
+//   try {
+//     const { Company_Id, ...updateData } = req.body;
+
+//     // Ensure Company_Id is provided
+//     if (!Company_Id) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Company_Id is required for update.",
+//       });
+//     }
+
+//     // Find the company by ID
+//     const company = await Company.findByPk(Company_Id);
+//     if (!company) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company not found.",
+//       });
+//     }
+
+//     // Check for duplicate mobile number
+//     if (updateData.Mobile_Number) {
+//       const existingMobile = await Company.findOne({
+//         where: {
+//           Mobile_Number: updateData.Mobile_Number,
+//           Company_Id: { [Op.ne]: Company_Id },
+//         },
+//       });
+//       if (existingMobile) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Mobile number is already in use.",
+//         });
+//       }
+//     }
+
+//     // Check for duplicate email
+//     if (updateData.Company_Email) {
+//       const existingEmail = await Company.findOne({
+//         where: {
+//           Company_Email: updateData.Company_Email,
+//           Company_Id: { [Op.ne]: Company_Id },
+//         },
+//       });
+//       if (existingEmail) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Company email is already in use.",
+//         });
+//       }
+//     }
+
+//     // Check for duplicate username
+//     if (updateData.Company_User_Name) {
+//       const existingUserName = await Company.findOne({
+//         where: {
+//           Company_User_Name: updateData.Company_User_Name,
+//           Company_Id: { [Op.ne]: Company_Id },
+//         },
+//       });
+//       if (existingUserName) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Company username is already taken.",
+//         });
+//       }
+//     }
+
+//     // Handle Company_Logo file update if uploaded
+//     const Company_Logo = req.files?.Company_Logo
+//       ? req.files.Company_Logo[0].path
+//       : null;
+
+//     const Company_Gov_Docs = req.files?.Company_Gov_Docs
+//       ? req.files.Company_Gov_Docs[0].path
+//       : null;
+
+//     if (Company_Logo) {
+//       updateData.Company_Logo = Company_Logo;
+//     }
+
+//     if (Company_Gov_Docs) {
+//       updateData.Company_Gov_Docs = Company_Gov_Docs;
+//     }
+
+//     // Perform the update
+//     await Company.update(updateData, {
+//       where: { Company_Id },
+//     });
+
+//     // Fetch updated company (excluding sensitive fields)
+//     const companyUpdated = await Company.findByPk(Company_Id, {
+//       attributes: {
+//         exclude: [
+//           "password",
+//           "FCM_ID",
+//           "DEVICE_ID",
+//           "reset_token",
+//           "reset_token_expires",
+//         ],
+//       },
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Company updated successfully.",
+//       data: companyUpdated,
+//     });
+//   } catch (error) {
+//     console.error("Error updating company:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 export const RemoveCompany = async (req, res) => {
   try {
@@ -711,7 +837,7 @@ export const purchaseJobPostPlan = async (req, res) => {
       company.Plan_Start_Date = startDate;
       company.Plan_End_Date = endDate;
       company.Is_Unlimited_Job_Post = true;
-      company.Remaining_Job_Posts = null;
+      company.Remaining_Job_Posts = 0;
 
     } else if (plan.plan_type === "per_post") {
       company.Plan_Start_Date = null;
@@ -748,6 +874,57 @@ export const getPlanById = async (req, res) => {
   } catch (error) {
     console.error("Fetch Plan by ID Error:", error);
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const { job_applied_id, status } = req.body;
+
+    // ✅ Validate input
+    if (!job_applied_id || !status) {
+      return res.status(400).json({
+        stat: false,
+        message: "job_applied_id and status are required.",
+      });
+    }
+
+    // ✅ Validate status value
+    const validStatuses = ["Pending", "Approved", "Rejected"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        stat: false,
+        message: `Invalid status value. Allowed values: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    // 🔍 Find the application
+    const application = await AppliedJob.findOne({ where: { job_applied_id } });
+
+    if (!application) {
+      return res.status(404).json({
+        stat: false,
+        message: "Application not found.",
+      });
+    }
+
+    // 🔄 Update status
+    application.application_status = status;
+    await application.save();
+
+    return res.status(200).json({
+      stat: true,
+      message: `Application status updated to ${status}.`,
+      data: application,
+    });
+  } catch (error) {
+    console.error("Error updating application status:", error);
+    return res.status(500).json({
+      stat: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 

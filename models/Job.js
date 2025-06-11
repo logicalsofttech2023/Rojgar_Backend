@@ -138,4 +138,6 @@ const Job = sequelize.define(
 );
 Job.belongsTo(Company, { foreignKey: "Company_Id", as: "company" });
 
+
+
 export default Job;
