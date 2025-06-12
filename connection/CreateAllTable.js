@@ -12,19 +12,23 @@ import UserJobPreferences from "../models/userJobPreferences.js";
 
 export const createAllTables = async () => {
   try {
+    // Parent tables first
     await Department.sync({ alter: true });
-    await Admin.sync({ alter: true });
-    await AppliedJob.sync({ alter: true });
-    await Company.sync({ alter: true });
-    await Job.sync({ alter: true });
     await JobPostPlan.sync({ alter: true });
+    await Company.sync({ alter: true }); // Company depends on JobPostPlan
+
+    // Then dependent tables
+    await Job.sync({ alter: true }); // Job depends on Company
+    await AppliedJob.sync({ alter: true }); // AppliedJob depends on Job/User
+    await User.sync({ alter: true });
+    await UserJobPreferences.sync({ alter: true }); // Depends on User
+    await Admin.sync({ alter: true });
     await Report.sync({ alter: true });
     await Suggestion.sync({ alter: true });
-    await User.sync({ alter: true });
-    await UserJobPreferences.sync({ alter: true });
 
-    console.log("All tables created successfully.");
+    console.log("✅ All tables created successfully.");
   } catch (error) {
-    console.error("Error creating tables:", error);
+    console.error("❌ Error creating tables:", error);
   }
 };
+

@@ -136,7 +136,11 @@ const Job = sequelize.define(
     updatedAt: "updated_at",
   }
 );
-Job.belongsTo(Company, { foreignKey: "Company_Id", as: "company" });
+Job.belongsTo(Company, {
+  foreignKey: "Company_Id",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
 
 
 
