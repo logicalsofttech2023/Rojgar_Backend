@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const sequelize = new Sequelize(
-  "rojgar",
-  "root",
-  "",
+  "logicals_new_rojgaarr",
+  "logicals_logicals_rojgaarr",
+  "CtfMu$)5sm-p",
   {
-    host: "localhost",
+    host: "157.66.191.9",
     port: 3306,
     dialect: "mysql",
     dialectOptions: {
@@ -31,6 +31,9 @@ export const connectDB = async () => {
 export default sequelize;
 
 
+//Live
+
+
 // const sequelize = new Sequelize(
 //   "logicals_new_rojgaarr",
 //   "logicals_logicals_rojgaarr",
@@ -46,3 +49,20 @@ export default sequelize;
 //   }
 // );
 
+
+// Local
+
+// const sequelize = new Sequelize(
+//   "rojgar",
+//   "root",
+//   "",
+//   {
+//     host: "localhost",
+//     port: 3306,
+//     dialect: "mysql",
+//     dialectOptions: {
+//       connectTimeout: 10000,
+//     },
+//     logging: false,
+//   }
+// );
