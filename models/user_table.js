@@ -93,17 +93,6 @@ const User = sequelize.define(
         }
       },
     },
-    Device_ID: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure each device ID is unique
-      set(value) {
-        if (value) {
-          const salt = bcrypt.genSaltSync(10);
-          this.setDataValue("DEVICE_ID", bcrypt.hashSync(value, salt));
-        }
-      },
-    },
     user_image: {
       type: DataTypes.STRING(501),
       allowNull: true,

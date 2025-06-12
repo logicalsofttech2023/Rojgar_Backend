@@ -29,7 +29,7 @@ export const SaveCompany = async (req, res, next) => {
       Latitude,
       Longitude,
       FCM_ID,
-      Device_ID,
+     
     } = req.body;
 
     let Company_Logo = req.files["Company_Logo"]
@@ -94,7 +94,6 @@ export const SaveCompany = async (req, res, next) => {
         Longitude,
         Company_Gov_Docs,
         FCM_ID,
-        Device_ID,
       });
       return res.status(200).json({
         stat: true,
@@ -194,7 +193,7 @@ export const Login_Company = async (req, res, next) => {
         User_Name: company.Company_User_Name,
         Gov_Docs: company.Company_Gov_Docs,
         FCM_ID: company.FCM_ID,
-        Device_ID: company.Device_ID,
+      
         Stat: company.Company_Status,
         Type: company.Company_Type,
         CreatedAt: company.createdAt,
@@ -238,7 +237,7 @@ export const getCompanyById = async (req, res) => {
     // Fetch company details
     const company = await Company.findOne({
       where: { Company_Id: companyId },
-      attributes: { exclude: ["password", "FCM_ID", "DEVICE_ID"] },
+      attributes: { exclude: ["password", "FCM_ID"] },
       include: [
         {
           model: JobPostPlan,
@@ -289,7 +288,7 @@ export const updateCompany = async (req, res, next) => {
       Latitude,
       Longitude,
       FCM_ID,
-      Device_ID,
+      
     } = req.body;
 
     let Company_Logo = req.files?.["Company_Logo"]
@@ -357,7 +356,7 @@ export const updateCompany = async (req, res, next) => {
       Latitude,
       Longitude,
       FCM_ID,
-      Device_ID,
+     
       ...(Company_Logo && { Company_Logo }),
       ...(Company_Gov_Docs && { Company_Gov_Docs }),
     });
@@ -397,124 +396,6 @@ export const updateCompany = async (req, res, next) => {
 };
 
 
-// export const updateCompany = async (req, res) => {
-//   try {
-//     const { Company_Id, ...updateData } = req.body;
-
-//     // Ensure Company_Id is provided
-//     if (!Company_Id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Company_Id is required for update.",
-//       });
-//     }
-
-//     // Find the company by ID
-//     const company = await Company.findByPk(Company_Id);
-//     if (!company) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Company not found.",
-//       });
-//     }
-
-//     // Check for duplicate mobile number
-//     if (updateData.Mobile_Number) {
-//       const existingMobile = await Company.findOne({
-//         where: {
-//           Mobile_Number: updateData.Mobile_Number,
-//           Company_Id: { [Op.ne]: Company_Id },
-//         },
-//       });
-//       if (existingMobile) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Mobile number is already in use.",
-//         });
-//       }
-//     }
-
-//     // Check for duplicate email
-//     if (updateData.Company_Email) {
-//       const existingEmail = await Company.findOne({
-//         where: {
-//           Company_Email: updateData.Company_Email,
-//           Company_Id: { [Op.ne]: Company_Id },
-//         },
-//       });
-//       if (existingEmail) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Company email is already in use.",
-//         });
-//       }
-//     }
-
-//     // Check for duplicate username
-//     if (updateData.Company_User_Name) {
-//       const existingUserName = await Company.findOne({
-//         where: {
-//           Company_User_Name: updateData.Company_User_Name,
-//           Company_Id: { [Op.ne]: Company_Id },
-//         },
-//       });
-//       if (existingUserName) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Company username is already taken.",
-//         });
-//       }
-//     }
-
-//     // Handle Company_Logo file update if uploaded
-//     const Company_Logo = req.files?.Company_Logo
-//       ? req.files.Company_Logo[0].path
-//       : null;
-
-//     const Company_Gov_Docs = req.files?.Company_Gov_Docs
-//       ? req.files.Company_Gov_Docs[0].path
-//       : null;
-
-//     if (Company_Logo) {
-//       updateData.Company_Logo = Company_Logo;
-//     }
-
-//     if (Company_Gov_Docs) {
-//       updateData.Company_Gov_Docs = Company_Gov_Docs;
-//     }
-
-//     // Perform the update
-//     await Company.update(updateData, {
-//       where: { Company_Id },
-//     });
-
-//     // Fetch updated company (excluding sensitive fields)
-//     const companyUpdated = await Company.findByPk(Company_Id, {
-//       attributes: {
-//         exclude: [
-//           "password",
-//           "FCM_ID",
-//           "DEVICE_ID",
-//           "reset_token",
-//           "reset_token_expires",
-//         ],
-//       },
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Company updated successfully.",
-//       data: companyUpdated,
-//     });
-//   } catch (error) {
-//     console.error("Error updating company:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
 
 export const RemoveCompany = async (req, res) => {
   try {

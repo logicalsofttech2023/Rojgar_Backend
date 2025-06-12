@@ -99,17 +99,7 @@ const Company = sequelize.define(
         }
       },
     },
-    DEVICE_ID: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true, // Ensure each device ID is unique
-      set(value) {
-        if (value) {
-          const salt = bcrypt.genSaltSync(10);
-          this.setDataValue("DEVICE_ID", bcrypt.hashSync(value, salt));
-        }
-      },
-    },
+    
     reset_token: {
       type: DataTypes.STRING(255),
       allowNull: true,

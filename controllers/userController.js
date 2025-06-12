@@ -627,7 +627,7 @@ export const getUserDetails = async (req, res) => {
 
     const user = await User.findOne({
       where: { user_id: user_id },
-      attributes: { exclude: ["password", "FCM_ID", "Device_Id"] },
+      attributes: { exclude: ["password", "FCM_ID"] },
     });
 
     // Check if user exists
