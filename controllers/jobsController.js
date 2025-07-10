@@ -147,7 +147,7 @@ export const getJobs = async (req, res) => {
       include: [
         {
           model: Company,
-          as: "company",
+          as: "company_table",
           attributes: ["Company_Logo", "Company_Name"],
         },
       ],
@@ -634,13 +634,6 @@ export const getLatestJobs = async (req, res) => {
         "job_description",
         "created_at",
       ],
-      include: [
-        {
-          model: Company,
-          as: "company",
-          attributes: ["Company_Logo"],
-        },
-      ],
     });
 
     if (!jobs.length) {
@@ -903,7 +896,7 @@ export const getJobById = async (req, res) => {
       include: [
         {
           model: Company,
-          as: "company",
+          as: "company_table",
           attributes: ["Company_Logo", "Company_Name"],
         },
       ],

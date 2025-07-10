@@ -879,7 +879,7 @@ export const getJobPostPlanById = async (req, res) => {
 // UPDATE
 export const updateJobPostPlan = async (req, res) => {
   try {
-    const plan = await JobPostPlan.findByPk(req.params.id);
+    const plan = await JobPostPlan.findByPk(req.query.id);
     if (!plan) {
       return res
         .status(404)
